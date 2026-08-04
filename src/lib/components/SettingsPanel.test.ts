@@ -28,20 +28,18 @@ describe('SettingsPanel', () => {
         onThemeChange,
       },
     });
-    await fireEvent.change(screen.getByLabelText('Appearance'), {
+    await fireEvent.change(screen.getByLabelText('화면 모드'), {
       target: { value: 'dark' },
     });
-    await fireEvent.change(screen.getByLabelText('Primary provider'), {
+    await fireEvent.change(screen.getByLabelText('기본 제공자'), {
       target: { value: 'codex' },
     });
-    await fireEvent.change(screen.getByLabelText('Pet'), {
+    await fireEvent.change(screen.getByLabelText('펫'), {
       target: { value: 'corgi' },
     });
-    await fireEvent.click(screen.getByLabelText('Speech bubbles'));
-    await fireEvent.click(screen.getByLabelText('Native notifications'));
-    await fireEvent.click(
-      screen.getByLabelText('Secondary provider notifications'),
-    );
+    await fireEvent.click(screen.getByLabelText('말풍선'));
+    await fireEvent.click(screen.getByLabelText('네이티브 알림'));
+    await fireEvent.click(screen.getByLabelText('보조 제공자 알림'));
     expect(onChange).toHaveBeenCalledWith(
       expect.objectContaining({ primaryProvider: 'codex' }),
     );
@@ -73,15 +71,15 @@ describe('SettingsPanel', () => {
       },
     });
 
-    expect(screen.getByLabelText('Hide/show shortcut').textContent).toBe(
+    expect(screen.getByLabelText('펫 숨기기/표시 단축키').textContent).toBe(
       'Cmd+Shift+H',
     );
     // The two sentences sit on their own lines, split by a <br>, so match each
     // against the paragraph rather than expecting one exact text node.
-    expect(screen.queryByText(/Hides and shows the pet\./)).not.toBeNull();
     expect(
-      screen.queryByText(/Usage keeps updating while hidden\./),
+      screen.queryByText(/펫을 숨기거나 다시 표시합니다\./),
     ).not.toBeNull();
+    expect(screen.queryByText(/숨겨진 동안에도 사용량은 계속/)).not.toBeNull();
     // Guards the regression this screen exists to prevent: an editable field
     // here is what let one failed registration persist as "no shortcut active".
     expect(screen.queryByRole('textbox')).toBeNull();
@@ -89,7 +87,7 @@ describe('SettingsPanel', () => {
 
   it('explains how to recover when another app owns the shortcut', () => {
     const conflictMessage =
-      'Another app is using this shortcut. Close it and restart CacheBite.';
+      '다른 앱이 이 단축키를 사용 중입니다. 해당 앱을 종료한 뒤 CacheBite를 다시 실행하세요.';
     const { unmount } = render(SettingsPanel, {
       props: {
         settings,

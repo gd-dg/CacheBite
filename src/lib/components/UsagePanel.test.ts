@@ -80,11 +80,14 @@ describe('UsagePanel', () => {
       },
     });
     expect(
-      (screen.getByRole('button', { name: 'Refresh now' }) as HTMLButtonElement)
-        .disabled,
+      (
+        screen.getByRole('button', {
+          name: '지금 새로고침',
+        }) as HTMLButtonElement
+      ).disabled,
     ).toBe(true);
     await fireEvent.click(
-      screen.getByRole('button', { name: 'Set as primary' }),
+      screen.getByRole('button', { name: '기본 제공자로 설정' }),
     );
     expect(onPrimary).toHaveBeenCalledWith('claude');
     expect(onRefresh).not.toHaveBeenCalled();
@@ -148,7 +151,7 @@ describe('UsagePanel', () => {
     expect(onClose).toHaveBeenCalledTimes(1);
     expect(onQuit).not.toHaveBeenCalled();
 
-    await fireEvent.click(screen.getByRole('button', { name: 'Quit' }));
+    await fireEvent.click(screen.getByRole('button', { name: '종료' }));
     expect(onQuit).toHaveBeenCalledTimes(1);
     expect(onClose).toHaveBeenCalledTimes(1);
   });
@@ -169,7 +172,7 @@ describe('UsagePanel', () => {
     expect(
       screen.getByRole('button', { name: 'Close usage panel' }),
     ).toBeTruthy();
-    await fireEvent.click(screen.getByRole('button', { name: 'Settings' }));
+    await fireEvent.click(screen.getByRole('button', { name: '설정' }));
     expect(onSettings).toHaveBeenCalledTimes(1);
   });
 

@@ -517,8 +517,8 @@ describe('application composition root', () => {
     const { gateway } = fixture();
     render(App, { props: { gateway, notificationAdapter: notifications } });
     expect(await screen.findByText('Pro')).toBeTruthy();
-    await fireEvent.click(screen.getByRole('button', { name: 'Settings' }));
-    await fireEvent.click(screen.getByLabelText('Native notifications'));
+    await fireEvent.click(screen.getByRole('button', { name: '설정' }));
+    await fireEvent.click(screen.getByLabelText('네이티브 알림'));
     await waitFor(() => expect(gateway.updateSettings).toHaveBeenCalled());
     expect(gateway.getPetPackage).not.toHaveBeenCalled();
   });
@@ -528,11 +528,11 @@ describe('application composition root', () => {
     const { gateway } = fixture();
     render(App, { props: { gateway, notificationAdapter: notifications } });
     await screen.findByText('Pro');
-    await fireEvent.click(screen.getByRole('button', { name: 'Settings' }));
-    expect(screen.getByLabelText('Native notifications')).toBeTruthy();
-    await fireEvent.click(screen.getByRole('button', { name: '← Back' }));
+    await fireEvent.click(screen.getByRole('button', { name: '설정' }));
+    expect(screen.getByLabelText('네이티브 알림')).toBeTruthy();
+    await fireEvent.click(screen.getByRole('button', { name: '← 뒤로' }));
     expect(await screen.findByText('Pro')).toBeTruthy();
-    expect(screen.queryByLabelText('Native notifications')).toBeNull();
+    expect(screen.queryByLabelText('네이티브 알림')).toBeNull();
   });
 
   it('resizes to rendered content, dedupes success, and retries failure', async () => {
@@ -604,7 +604,7 @@ describe('application composition root', () => {
     ).toBe('true');
 
     const setPrimary = screen.getByRole('button', {
-      name: 'Set as primary',
+      name: '기본 제공자로 설정',
     }) as HTMLButtonElement;
     expect(setPrimary.disabled).toBe(false);
     await fireEvent.click(setPrimary);
@@ -627,10 +627,8 @@ describe('application composition root', () => {
     const { gateway } = fixture();
     render(App, { props: { gateway, notificationAdapter: notifications } });
 
-    await fireEvent.click(
-      await screen.findByRole('button', { name: 'Settings' }),
-    );
-    const picker = await screen.findByLabelText('Pet');
+    await fireEvent.click(await screen.findByRole('button', { name: '설정' }));
+    const picker = await screen.findByLabelText('펫');
     expect(
       [...(picker as HTMLSelectElement).options].map((option) => option.value),
     ).toEqual(['corgi', 'tabby']);
@@ -655,12 +653,10 @@ describe('application composition root', () => {
     );
     render(App, { props: { gateway, notificationAdapter: notifications } });
 
-    await fireEvent.click(
-      await screen.findByRole('button', { name: 'Settings' }),
-    );
+    await fireEvent.click(await screen.findByRole('button', { name: '설정' }));
 
     // Falls back to the active pet rather than rendering an empty <select>.
-    const picker = (await screen.findByLabelText('Pet')) as HTMLSelectElement;
+    const picker = (await screen.findByLabelText('펫')) as HTMLSelectElement;
     expect([...picker.options].map((option) => option.value)).toEqual([
       'tabby',
     ]);
@@ -676,7 +672,7 @@ describe('application composition root', () => {
 
     await fireEvent.click(await screen.findByRole('tab', { name: 'Codex' }));
     const setPrimary = screen.getByRole('button', {
-      name: 'Set as primary',
+      name: '기본 제공자로 설정',
     }) as HTMLButtonElement;
     await fireEvent.click(setPrimary);
 
@@ -703,12 +699,10 @@ describe('application composition root', () => {
     });
     render(App, { props: { gateway, notificationAdapter: notifications } });
 
-    await fireEvent.click(
-      await screen.findByRole('button', { name: 'Settings' }),
-    );
+    await fireEvent.click(await screen.findByRole('button', { name: '설정' }));
 
     await screen.findByText(
-      'Another app is using this shortcut. Close it and restart CacheBite.',
+      '다른 앱이 이 단축키를 사용 중입니다. 해당 앱을 종료한 뒤 CacheBite를 다시 실행하세요.',
     );
     // A conflict is a platform diagnostic, never a settings write.
     expect(gateway.updateSettings).not.toHaveBeenCalled();
@@ -723,13 +717,10 @@ describe('application composition root', () => {
     });
     render(App, { props: { gateway, notificationAdapter: notifications } });
     await screen.findByText('Pro');
-    await fireEvent.click(screen.getByRole('button', { name: 'Settings' }));
+    await fireEvent.click(screen.getByRole('button', { name: '설정' }));
     expect(
-      (
-        (await screen.findByLabelText(
-          'Native notifications',
-        )) as HTMLInputElement
-      ).checked,
+      ((await screen.findByLabelText('네이티브 알림')) as HTMLInputElement)
+        .checked,
     ).toBe(true);
     expect(gateway.updateSettings).not.toHaveBeenCalled();
   });
@@ -773,15 +764,14 @@ describe('application composition root', () => {
     };
     render(App, { props: { gateway, notificationAdapter: denied } });
     await screen.findByText('Pro');
-    await fireEvent.click(screen.getByRole('button', { name: 'Settings' }));
-    await fireEvent.click(screen.getByLabelText('Native notifications'));
+    await fireEvent.click(screen.getByRole('button', { name: '설정' }));
+    await fireEvent.click(screen.getByLabelText('네이티브 알림'));
     expect(
       await screen.findByText('Notification permission denied'),
     ).toBeTruthy();
     await waitFor(() =>
       expect(
-        (screen.getByLabelText('Native notifications') as HTMLInputElement)
-          .checked,
+        (screen.getByLabelText('네이티브 알림') as HTMLInputElement).checked,
       ).toBe(false),
     );
   });
@@ -791,8 +781,8 @@ describe('application composition root', () => {
     const { gateway } = fixture();
     render(App, { props: { gateway, notificationAdapter: notifications } });
     await screen.findByText('Pro');
-    await fireEvent.click(screen.getByRole('button', { name: 'Settings' }));
-    await fireEvent.change(await screen.findByLabelText('Appearance'), {
+    await fireEvent.click(screen.getByRole('button', { name: '설정' }));
+    await fireEvent.change(await screen.findByLabelText('화면 모드'), {
       target: { value: 'dark' },
     });
     await waitFor(() =>
@@ -824,12 +814,12 @@ describe('application composition root', () => {
       });
     render(App, { props: { gateway, notificationAdapter: notifications } });
     await screen.findByText('Pro');
-    await fireEvent.click(screen.getByRole('button', { name: 'Settings' }));
+    await fireEvent.click(screen.getByRole('button', { name: '설정' }));
     const bubbles = (await screen.findByLabelText(
-      'Speech bubbles',
+      '말풍선',
     )) as HTMLInputElement;
     const secondary = screen.getByLabelText(
-      'Secondary provider notifications',
+      '보조 제공자 알림',
     ) as HTMLInputElement;
 
     await fireEvent.click(bubbles);
@@ -860,9 +850,9 @@ describe('application composition root', () => {
       .mockImplementationOnce(async (settings) => settings);
     render(App, { props: { gateway, notificationAdapter: notifications } });
     await screen.findByText('Pro');
-    await fireEvent.click(screen.getByRole('button', { name: 'Settings' }));
+    await fireEvent.click(screen.getByRole('button', { name: '설정' }));
     const nativeNotifications = (await screen.findByLabelText(
-      'Native notifications',
+      '네이티브 알림',
     )) as HTMLInputElement;
 
     await fireEvent.click(nativeNotifications);
@@ -870,7 +860,7 @@ describe('application composition root', () => {
     await waitFor(() => expect(nativeNotifications.checked).toBe(false));
 
     const secondary = screen.getByLabelText(
-      'Secondary provider notifications',
+      '보조 제공자 알림',
     ) as HTMLInputElement;
     await fireEvent.click(secondary);
 
@@ -1039,7 +1029,7 @@ describe('application composition root', () => {
     const { gateway } = fixture();
     render(App, { props: { gateway, notificationAdapter: notifications } });
 
-    await fireEvent.click(await screen.findByRole('button', { name: 'Quit' }));
+    await fireEvent.click(await screen.findByRole('button', { name: '종료' }));
     expect(gateway.quit).toHaveBeenCalledOnce();
     expect(gateway.hidePanel).not.toHaveBeenCalled();
     expect(gateway.togglePanel).not.toHaveBeenCalled();
@@ -1066,9 +1056,10 @@ describe('application composition root', () => {
       await screen.findByText('fullscreen detection unavailable'),
     ).toBeTruthy();
     expect(screen.getByText('autostart unavailable')).toBeTruthy();
-    await fireEvent.click(screen.getByRole('button', { name: 'Settings' }));
+    await fireEvent.click(screen.getByRole('button', { name: '설정' }));
     expect(
-      (screen.getByLabelText('Start at login') as HTMLInputElement).disabled,
+      (screen.getByLabelText('로그인 시 자동 실행') as HTMLInputElement)
+        .disabled,
     ).toBe(true);
   });
 });

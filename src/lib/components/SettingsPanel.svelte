@@ -36,13 +36,14 @@
 </script>
 
 <section class="settings" aria-labelledby="settings-heading">
-  <h2 id="settings-heading" class="settings-heading">Settings</h2>
+  <h2 id="settings-heading" class="settings-heading">설정</h2>
   <label class="field"
-    >Appearance <select
+    >화면 모드 <select
       value={theme}
       onchange={(event) => onThemeChange(asTheme(event.currentTarget.value))}
-      ><option value="system">System</option><option value="light">Light</option
-      ><option value="dark">Dark</option></select
+      ><option value="system">시스템</option><option value="light"
+        >라이트</option
+      ><option value="dark">다크</option></select
     ></label
   >
   <label class="toggle"
@@ -54,7 +55,7 @@
           ...settings,
           notificationsEnabled: event.currentTarget.checked,
         })}
-    /><span>Native notifications</span></label
+    /><span>네이티브 알림</span></label
   >
   <label class="toggle"
     ><input
@@ -65,10 +66,10 @@
           ...settings,
           secondaryNotificationsEnabled: event.currentTarget.checked,
         })}
-    /><span>Secondary provider notifications</span></label
+    /><span>보조 제공자 알림</span></label
   >
   <label class="field"
-    >Primary provider <select
+    >기본 제공자 <select
       value={settings.primaryProvider}
       onchange={(event) =>
         onChange({
@@ -80,7 +81,7 @@
     ></label
   >
   <label class="field"
-    >Pet <select
+    >펫 <select
       value={settings.selectedPetId}
       onchange={(event) =>
         onChange({ ...settings, selectedPetId: event.currentTarget.value })}
@@ -95,7 +96,7 @@
       checked={settings.bubblesEnabled}
       onchange={(event) =>
         onChange({ ...settings, bubblesEnabled: event.currentTarget.checked })}
-    /><span>Speech bubbles</span></label
+    /><span>말풍선</span></label
   >
   <label class="toggle"
     ><input
@@ -104,12 +105,12 @@
       disabled={!autostartAvailable}
       onchange={(event) =>
         onChange({ ...settings, startAtLogin: event.currentTarget.checked })}
-    /><span>Start at login</span></label
+    /><span>로그인 시 자동 실행</span></label
   >
   <!-- Read-only: the binding is a fixed native constant, so there is no form
        control here and no `onChange` to fire. -->
   <div class="field">
-    <span id={hideShowHotkeyLabelId}>Hide/show shortcut</span>
+    <span id={hideShowHotkeyLabelId}>펫 숨기기/표시 단축키</span>
     <kbd
       class="shortcut"
       aria-labelledby={hideShowHotkeyLabelId}
@@ -117,10 +118,12 @@
     >
   </div>
   <p id={hideShowHotkeyHelpId} class="field-help">
-    Hides and shows the pet.<br />Usage keeps updating while hidden.
+    펫을 숨기거나 다시 표시합니다.<br />숨겨진 동안에도 사용량은 계속
+    갱신됩니다.
     {#if !hideShowHotkeyAvailable}
       <span class="field-state"
-        >Another app is using this shortcut. Close it and restart CacheBite.</span
+        >다른 앱이 이 단축키를 사용 중입니다. 해당 앱을 종료한 뒤 CacheBite를
+        다시 실행하세요.</span
       >
     {/if}
   </p>

@@ -421,8 +421,8 @@ fn begin_reveal(
 /// never promises the opposite of what the click does.
 fn pet_menu_panel_label(toggle: PanelToggle) -> &'static str {
     match toggle {
-        PanelToggle::Hide => "Hide usage panel",
-        PanelToggle::Show => "Show usage panel",
+        PanelToggle::Hide => "사용량 패널 숨기기",
+        PanelToggle::Show => "사용량 패널 열기",
     }
 }
 
@@ -532,13 +532,13 @@ pub fn show_pet_menu(
     let hide_item = MenuItem::with_id(
         &app,
         PET_MENU_HIDE_PET_ID,
-        "Hide pet",
+        "펫 숨기기",
         true,
         Some(DEFAULT_HIDE_SHOW_HOTKEY),
     )
     .map_err(|_| IpcError::MenuUnavailable)?;
     let separator = PredefinedMenuItem::separator(&app).map_err(|_| IpcError::MenuUnavailable)?;
-    let quit_item = MenuItem::with_id(&app, PET_MENU_QUIT_ID, "Quit CacheBite", true, None::<&str>)
+    let quit_item = MenuItem::with_id(&app, PET_MENU_QUIT_ID, "CacheBite 종료", true, None::<&str>)
         .map_err(|_| IpcError::MenuUnavailable)?;
     let menu = Menu::with_items(&app, &[&panel_item, &hide_item, &separator, &quit_item])
         .map_err(|_| IpcError::MenuUnavailable)?;
@@ -707,8 +707,11 @@ mod pet_menu_copy_tests {
 
     #[test]
     fn panel_label_matches_the_toggle_the_click_performs() {
-        assert_eq!(pet_menu_panel_label(PanelToggle::Hide), "Hide usage panel");
-        assert_eq!(pet_menu_panel_label(PanelToggle::Show), "Show usage panel");
+        assert_eq!(
+            pet_menu_panel_label(PanelToggle::Hide),
+            "사용량 패널 숨기기"
+        );
+        assert_eq!(pet_menu_panel_label(PanelToggle::Show), "사용량 패널 열기");
     }
 }
 

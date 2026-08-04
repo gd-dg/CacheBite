@@ -648,7 +648,7 @@
     {#if showSettings}
       <div class="settings-view">
         <button class="settings-back" onclick={() => (showSettings = false)}
-          >← Back</button
+          >← 뒤로</button
         >
         <SettingsPanel
           settings={$settingsStore}

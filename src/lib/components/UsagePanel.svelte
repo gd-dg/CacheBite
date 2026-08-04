@@ -84,18 +84,17 @@
       <button
         class="primary-action"
         disabled={refreshing}
-        onclick={() => onRefresh(selected)}>Refresh now</button
+        onclick={() => onRefresh(selected)}>지금 새로고침</button
       >
       <button
         class="secondary-action"
         disabled={selected === primary}
-        onclick={() => onPrimary(selected)}>Set as primary</button
+        onclick={() => onPrimary(selected)}>기본 제공자로 설정</button
       >
     </div>
     <div class="footer-row">
-      <button class="ghost-action" onclick={() => onSettings()}>Settings</button
-      >
-      <button class="ghost-action quit" onclick={() => onQuit()}>Quit</button>
+      <button class="ghost-action" onclick={() => onSettings()}>설정</button>
+      <button class="ghost-action quit" onclick={() => onQuit()}>종료</button>
     </div>
   </footer>
 </section>
