@@ -38,6 +38,7 @@
       session={model.session}
       weekly={model.weekly}
       stale={model.stale}
+      secondary={model.secondary}
     />
   {/if}
   <div class="pet">

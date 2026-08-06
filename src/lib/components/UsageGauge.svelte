@@ -29,7 +29,7 @@
 
 <section class="gauge" aria-label={`${label} usage`} data-testid="usage-gauge">
   <div class="gauge-heading">
-    <span>{label} window</span>
+    <span>{label}</span>
     <strong data-severity={usage.severity}
       >{usage.usedPercent === null
         ? 'Unknown'
@@ -69,11 +69,12 @@
     font-size: 0.8125rem;
   }
   strong {
-    font-family: var(--font-mono);
     font-size: 0.9375rem;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.01em;
   }
   .gauge-track {
-    height: 0.5rem;
+    height: 0.375rem;
     overflow: hidden;
     border-radius: 999px;
     background: var(--color-surface-sunken);
@@ -85,6 +86,12 @@
     height: 100%;
     border-radius: inherit;
     background: var(--sev-unknown);
+    transition: width var(--duration-slow) var(--ease-emphasized);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .gauge-fill {
+      transition: none;
+    }
   }
   strong[data-severity='ok'] {
     color: var(--sev-ok);
@@ -118,7 +125,7 @@
   }
   time {
     color: var(--color-text-faint);
-    font-family: var(--font-mono);
     font-size: 0.6875rem;
+    font-variant-numeric: tabular-nums;
   }
 </style>

@@ -22,13 +22,29 @@
      keep saturated fills, so this stays near-white in dark mode too. */
   --badge-icon: #ffffff;
   --overlay-stale-dim: 0.42;
-  --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+  /* Platform-native text, per the HIG: SF Pro on macOS, Segoe UI (Variable)
+     on Windows, the system default elsewhere. Numeric UI (percentages, reset
+     times) uses the same face with tabular figures instead of a monospace
+     family, so digits align without breaking the type voice. */
+  --font-ui:
+    -apple-system, BlinkMacSystemFont, 'Segoe UI Variable Text', 'Segoe UI',
+    system-ui, ui-sans-serif, sans-serif;
+  --font-mono: ui-monospace, 'Cascadia Mono', 'SF Mono', monospace;
   --space-1: 0.25rem;
   --space-2: 0.5rem;
   --space-3: 0.75rem;
   --space-4: 1rem;
   --shadow-panel: 0 0.75rem 2rem rgb(22 25 29 / 18%);
-  font-family: 'IBM Plex Sans', ui-sans-serif, system-ui, sans-serif;
+  /* Motion: one shared easing/duration vocabulary, tuned to the HIG's
+     "quick to start, gentle to settle" feel. Anything animating layout-bound
+     properties should not exist; these are for transform/opacity/color and
+     the gauge fills. */
+  --ease-out: cubic-bezier(0.25, 0.1, 0.25, 1);
+  --ease-emphasized: cubic-bezier(0.32, 0.72, 0, 1);
+  --duration-fast: 150ms;
+  --duration-normal: 250ms;
+  --duration-slow: 400ms;
+  font-family: var(--font-ui);
 }
 
 /* Dark palette. Applied when the OS prefers dark AND the user has not pinned

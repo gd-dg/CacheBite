@@ -1,6 +1,6 @@
 <script>
-  /** @type {{ session: import('./models').RingWindowModel; weekly: import('./models').RingWindowModel; stale: boolean }} */
-  let { session, weekly, stale } = $props();
+  /** @type {{ session: import('./models').RingWindowModel; weekly: import('./models').RingWindowModel; stale: boolean; secondary?: import('./models').SecondaryRingModel | null }} */
+  let { session, weekly, stale, secondary = null } = $props();
 
   /** @param {import('./models').RingWindowModel} window */
   const percent = (window) =>
@@ -14,7 +14,10 @@
   // the accessibility tree. One composed label on the <svg> is both announced
   // and easier to listen to than two arcs read in isolation.
   const ringLabel = $derived(
-    `Provider usage: ${label('5-hour', session)}, ${label('Weekly', weekly)}`,
+    `Provider usage: ${label('5-hour', session)}, ${label('Weekly', weekly)}` +
+      (secondary
+        ? `. Secondary provider: ${label('5-hour', secondary.session)}, ${label('Weekly', secondary.weekly)}`
+        : ''),
   );
 </script>
 
@@ -45,6 +48,42 @@
     stroke-dasharray={`${percent(weekly)} 100`}
     aria-hidden="true"
   />
+  {#if secondary}
+    <!-- Concentric Activity-rings layout: the secondary provider is the same
+         split geometry one step inside, thinner and slightly dimmed so the
+         primary stays dominant at a glance. -->
+    <g
+      class="secondary"
+      class:secondary-stale={secondary.stale}
+      data-testid="usage-ring-secondary"
+      aria-hidden="true"
+    >
+      <path
+        class="track"
+        d="M 15.5 50 A 34.5 34.5 0 0 1 84.5 50"
+        pathLength="100"
+      />
+      <path
+        class="usage"
+        data-severity={secondary.session.severity}
+        d="M 15.5 50 A 34.5 34.5 0 0 1 84.5 50"
+        pathLength="100"
+        stroke-dasharray={`${percent(secondary.session)} 100`}
+      />
+      <path
+        class="track"
+        d="M 84.5 50 A 34.5 34.5 0 0 1 15.5 50"
+        pathLength="100"
+      />
+      <path
+        class="usage"
+        data-severity={secondary.weekly.severity}
+        d="M 84.5 50 A 34.5 34.5 0 0 1 15.5 50"
+        pathLength="100"
+        stroke-dasharray={`${percent(secondary.weekly)} 100`}
+      />
+    </g>
+  {/if}
   <text
     class="ring-label"
     x="50"
@@ -74,6 +113,21 @@
   }
   path {
     stroke-width: 6.5;
+    transition: stroke-dasharray var(--duration-slow) var(--ease-out);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    path {
+      transition: none;
+    }
+  }
+  .secondary path {
+    stroke-width: 3.5;
+  }
+  .secondary {
+    opacity: 0.9;
+  }
+  .secondary.secondary-stale {
+    opacity: var(--overlay-stale-dim);
   }
   .track {
     stroke: var(--sev-unknown);
@@ -97,7 +151,7 @@
   .ring-label {
     fill: var(--color-text-muted);
     stroke: none;
-    font-family: var(--font-mono);
+    font-family: var(--font-ui);
     font-size: 9px;
     font-weight: 600;
     letter-spacing: 0.08em;

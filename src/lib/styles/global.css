@@ -22,7 +22,9 @@ main {
 }
 
 main.panel {
-  width: min(19.5rem, 100%);
+  /* Must track PANEL_WIDTH_LOGICAL (`refresh/ipc.rs`) and the panel window
+     width in tauri.conf.json: 384px fits the two provider columns. */
+  width: min(24rem, 100%);
   min-height: 0;
   padding: 0;
   overflow: hidden;
@@ -50,6 +52,13 @@ main[data-window-label='overlay'] {
 
 :root[data-theme='light'] main.panel {
   background: rgb(250 250 252 / 92%);
+}
+
+/* One focus vocabulary everywhere: the platform accent as a soft outer ring,
+   only for keyboard focus. */
+:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
 }
 
 .visually-hidden {

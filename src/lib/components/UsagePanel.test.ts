@@ -25,7 +25,8 @@ const bothProviders = (system: SystemState) => ({
 
 describe('UsagePanel', () => {
   afterEach(cleanup);
-  it('always shows both provider tabs and loading skeleton only for loading', async () => {
+
+  it('shows both provider columns at once, with per-column loading skeletons', async () => {
     const { rerender } = render(UsagePanel, {
       props: {
         providers: {
@@ -36,69 +37,77 @@ describe('UsagePanel', () => {
             source: 'cli_rpc',
           },
         },
-        selected: 'claude',
         primary: 'claude',
         refreshing: false,
       },
     });
-    expect(screen.getByRole('tab', { name: 'Claude (primary)' })).toBeTruthy();
-    expect(screen.getByRole('tab', { name: 'Codex' })).toBeTruthy();
-    expect(screen.getByTestId('usage-skeleton')).toBeTruthy();
+    // Both columns render together — a loading Claude never hides Codex.
+    expect(screen.getByRole('article', { name: 'Claude usage' })).toBeTruthy();
+    expect(screen.getByRole('article', { name: 'Codex usage' })).toBeTruthy();
+    expect(screen.getByTestId('usage-skeleton-claude')).toBeTruthy();
+    expect(screen.queryByTestId('usage-skeleton-codex')).toBeNull();
+    expect(screen.getAllByTestId('usage-gauge')).toHaveLength(2);
     await rerender({
-      providers: {
-        claude: provider('offline'),
-        codex: { ...provider('active'), provider: 'codex', source: 'cli_rpc' },
-      },
-      selected: 'claude',
+      providers: bothProviders('active'),
       primary: 'claude',
       refreshing: false,
     });
-    expect(screen.queryByTestId('usage-skeleton')).toBeNull();
+    expect(screen.queryByTestId('usage-skeleton-claude')).toBeNull();
+    expect(screen.getAllByTestId('usage-gauge')).toHaveLength(4);
   });
 
-  it('disables refresh only while debounced and sets the selected tab primary without fetching', async () => {
+  it('marks the primary column with a chip and sets primary from the other column only', async () => {
     const onRefresh = vi.fn();
-    const onSelect = vi.fn();
     const onPrimary = vi.fn();
-    const { container } = render(UsagePanel, {
+    render(UsagePanel, {
       props: {
-        providers: {
-          claude: provider('active'),
-          codex: {
-            ...provider('active'),
-            provider: 'codex',
-            source: 'cli_rpc',
-          },
-        },
-        selected: 'claude',
+        providers: bothProviders('active'),
         primary: 'codex',
-        refreshing: true,
+        refreshing: false,
         nowMs: NOW,
         onRefresh,
-        onSelect,
         onPrimary,
       },
     });
+    // Exactly one primary chip, and no set-primary control for that column.
+    expect(screen.getByText('Primary')).toBeTruthy();
     expect(
-      (screen.getByRole('button', { name: 'Refresh now' }) as HTMLButtonElement)
-        .disabled,
-    ).toBe(true);
+      screen.queryByRole('button', { name: 'Set Codex as primary' }),
+    ).toBeNull();
     await fireEvent.click(
-      screen.getByRole('button', { name: 'Set as primary' }),
+      screen.getByRole('button', { name: 'Set Claude as primary' }),
     );
     expect(onPrimary).toHaveBeenCalledWith('claude');
     expect(onRefresh).not.toHaveBeenCalled();
-    const freshness = container.querySelector<HTMLElement>('.freshness');
-    expect(freshness?.textContent?.replace(/\s+/g, ' ').trim()).toBe(
-      '● Fresh · captured 2 min ago',
-    );
-    expect(freshness?.textContent).not.toMatch(/oauth_api|cli_rpc|cached/);
-    expect(
-      container.querySelector('.freshness time')?.getAttribute('datetime'),
-    ).toBe('2026-07-16T12:00:00Z');
   });
 
-  it('omits source and cache details from stale freshness copy', () => {
+  it('refreshes both providers through one control and disables it while refreshing', async () => {
+    const onRefresh = vi.fn();
+    const { rerender } = render(UsagePanel, {
+      props: {
+        providers: bothProviders('active'),
+        primary: 'claude',
+        refreshing: false,
+        nowMs: NOW,
+        onRefresh,
+      },
+    });
+    await fireEvent.click(screen.getByRole('button', { name: 'Refresh' }));
+    expect(onRefresh).toHaveBeenCalledTimes(1);
+    await rerender({
+      providers: bothProviders('active'),
+      primary: 'claude',
+      refreshing: true,
+      nowMs: NOW,
+      onRefresh,
+    });
+    expect(
+      (screen.getByRole('button', { name: 'Refreshing…' }) as HTMLButtonElement)
+        .disabled,
+    ).toBe(true);
+  });
+
+  it('shows per-column freshness without source or cache details', () => {
     const staleCached = {
       ...provider('active', true),
       isCached: true,
@@ -108,23 +117,32 @@ describe('UsagePanel', () => {
         providers: {
           claude: staleCached,
           codex: {
-            ...staleCached,
-            provider: 'codex',
+            ...provider('active'),
+            provider: 'codex' as const,
             source: 'cli_rpc',
           },
         },
-        selected: 'claude',
         primary: 'claude',
         refreshing: false,
         nowMs: NOW,
       },
     });
 
-    const freshness = container.querySelector('.freshness');
-    expect(freshness?.textContent?.replace(/\s+/g, ' ').trim()).toBe(
-      '● Stale · captured 2 min ago',
+    const freshness = [
+      ...container.querySelectorAll<HTMLElement>('.freshness'),
+    ];
+    expect(freshness).toHaveLength(2);
+    expect(freshness[0]?.textContent?.replace(/\s+/g, ' ').trim()).toBe(
+      '● Stale · 2 min ago',
     );
-    expect(freshness?.textContent).not.toMatch(/oauth_api|cli_rpc|cached/);
+    expect(freshness[1]?.textContent?.replace(/\s+/g, ' ').trim()).toBe(
+      '● Fresh · 2 min ago',
+    );
+    for (const entry of freshness)
+      expect(entry.textContent).not.toMatch(/oauth_api|cli_rpc|cached/);
+    expect(
+      container.querySelector('.freshness time')?.getAttribute('datetime'),
+    ).toBe('2026-07-16T12:00:00Z');
   });
 
   it('hides the panel through the close control and quits through the footer button', async () => {
@@ -133,7 +151,6 @@ describe('UsagePanel', () => {
     render(UsagePanel, {
       props: {
         providers: bothProviders('active'),
-        selected: 'claude',
         primary: 'claude',
         refreshing: false,
         nowMs: NOW,
@@ -158,7 +175,6 @@ describe('UsagePanel', () => {
     render(UsagePanel, {
       props: {
         providers: bothProviders('active'),
-        selected: 'claude',
         primary: 'claude',
         refreshing: false,
         nowMs: NOW,
@@ -177,7 +193,6 @@ describe('UsagePanel', () => {
     render(UsagePanel, {
       props: {
         providers: bothProviders('active'),
-        selected: 'claude',
         primary: 'claude',
         refreshing: false,
         nowMs: NOW,
@@ -195,7 +210,6 @@ describe('UsagePanel', () => {
     const { container } = render(UsagePanel, {
       props: {
         providers: bothProviders('active'),
-        selected: 'claude',
         primary: 'claude',
         refreshing: false,
         nowMs: NOW,
@@ -214,7 +228,6 @@ describe('UsagePanel', () => {
     render(UsagePanel, {
       props: {
         providers: bothProviders('active'),
-        selected: 'claude',
         primary: 'claude',
         refreshing: false,
         nowMs: NOW,
@@ -230,31 +243,41 @@ describe('UsagePanel', () => {
     ['unavailable' as const, 'The Claude CLI is not installed'],
     ['error' as const, 'Could not fetch usage. Retrying shortly.'],
     ['offline' as const, 'Cannot reach the network'],
-  ])('shows recovery guidance for %s', (system, expected) => {
-    render(UsagePanel, {
-      props: {
-        providers: bothProviders(system),
-        selected: 'claude',
-        primary: 'claude',
-        refreshing: false,
-        nowMs: NOW,
-      },
-    });
+  ])(
+    'shows per-column recovery guidance for %s without hiding the other column',
+    (system, expected) => {
+      render(UsagePanel, {
+        props: {
+          providers: {
+            claude: provider(system),
+            codex: {
+              ...provider('active'),
+              provider: 'codex' as const,
+              source: 'cli_rpc',
+            },
+          },
+          primary: 'claude',
+          refreshing: false,
+          nowMs: NOW,
+        },
+      });
 
-    expect(screen.getByRole('status').textContent).toBe(expected);
-  });
+      expect(screen.getByRole('status').textContent).toBe(expected);
+      // Provider independence: the healthy column keeps its gauges.
+      expect(screen.getAllByTestId('usage-gauge')).toHaveLength(2);
+    },
+  );
 
-  it('keeps the guidance live region empty while usage is displayable', () => {
+  it('renders no guidance live region while both providers are displayable', () => {
     render(UsagePanel, {
       props: {
         providers: bothProviders('active'),
-        selected: 'claude',
         primary: 'claude',
         refreshing: false,
         nowMs: NOW,
       },
     });
 
-    expect(screen.getByRole('status').textContent).toBe('');
+    expect(screen.queryByRole('status')).toBeNull();
   });
 });

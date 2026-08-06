@@ -1,29 +1,34 @@
 <script>
-  import ProviderTabs from './ProviderTabs.svelte';
   import UsageGauge from './UsageGauge.svelte';
   import { capturedAgo } from '../format/time.js';
   import { systemGuidance } from './systemGuidance.js';
   /** @typedef {import('./panelModels').PanelProviderModel} PanelProvider */
-  /** @type {{ providers: { claude: PanelProvider; codex: PanelProvider }; selected: import('../contracts/domain').Provider; primary?: import('../contracts/domain').Provider; refreshing: boolean; nowMs?: number; updateAvailable?: boolean; onRefresh?: (provider: import('../contracts/domain').Provider) => void; onSelect?: (provider: import('../contracts/domain').Provider) => void; onPrimary?: (provider: import('../contracts/domain').Provider) => void; onSettings?: () => void; onClose?: () => void; onQuit?: () => void }} */
+  /** @typedef {import('../contracts/domain').Provider} Provider */
+  /** @type {{ providers: { claude: PanelProvider; codex: PanelProvider }; primary: Provider; refreshing: boolean; nowMs?: number; updateAvailable?: boolean; onRefresh?: () => void; onPrimary?: (provider: Provider) => void; onSettings?: () => void; onClose?: () => void; onQuit?: () => void }} */
   let {
     providers,
-    selected,
-    primary = selected,
+    primary,
     refreshing,
     nowMs = Date.now(),
     updateAvailable = false,
     onRefresh = () => {},
-    onSelect = () => {},
     onPrimary = () => {},
     onSettings = () => {},
     onClose = () => {},
     onQuit = () => {},
   } = $props();
-  const current = $derived(providers[selected]);
-  const guidance = $derived(systemGuidance(current.system, selected));
-  const captured = $derived(
-    current.capturedAt === null ? null : capturedAgo(current.capturedAt, nowMs),
-  );
+
+  /** Column order is fixed — the primary marker moves, the columns do not. */
+  const PROVIDERS = /** @type {const} */ (['claude', 'codex']);
+  /** @param {Provider} provider */
+  const displayName = (provider) =>
+    provider === 'claude' ? 'Claude' : 'Codex';
+  /** @param {PanelProvider} model */
+  const freshness = (model) => {
+    if (model.capturedAt === null) return null;
+    const ago = capturedAgo(model.capturedAt, nowMs);
+    return ago === null ? null : { capturedAt: model.capturedAt, ago };
+  };
 </script>
 
 <section class="usage-panel" aria-label="Usage panel">
@@ -34,65 +39,80 @@
     title="Close usage panel"
     onclick={() => onClose()}>×</button
   >
-  <h2 class="visually-hidden">Usage panel</h2>
   <header>
-    <ProviderTabs {selected} {primary} {onSelect} />
+    <h2 class="panel-title">Usage</h2>
   </header>
-  <div class="body">
-    {#if current.system === 'loading'}
-      <div
-        class="skeleton"
-        data-testid="usage-skeleton"
-        aria-label="Loading usage"
+  <div class="columns">
+    {#each PROVIDERS as provider (provider)}
+      {@const model = providers[provider]}
+      {@const captured = freshness(model)}
+      {@const guidance = systemGuidance(model.system, provider)}
+      <article
+        class="provider-column"
+        aria-label={`${displayName(provider)} usage`}
       >
-        Loading…
-      </div>
-    {:else}
-      <div class="provider-heading">
-        <strong>{selected === 'claude' ? 'Claude' : 'Codex'}</strong>
-        {#if current.planType}<span class="plan-chip">{current.planType}</span
-          >{/if}
-      </div>
-      <UsageGauge
-        label="5-hour"
-        window={current.session}
-        stale={current.stale}
-        {nowMs}
-      />
-      <UsageGauge
-        label="Weekly"
-        window={current.weekly}
-        stale={current.stale}
-        {nowMs}
-      />
-      <small class:stale={current.stale} class="freshness"
-        >● {current.stale
-          ? 'Stale'
-          : 'Fresh'}{#if current.capturedAt && captured}<span
-            >&nbsp;· captured <time datetime={current.capturedAt}
-              >{captured}</time
-            ></span
-          >{/if}</small
-      >
-    {/if}
+        <div class="provider-heading">
+          <span class="provider-name">{displayName(provider)}</span>
+          {#if primary === provider}
+            <span class="primary-chip">Primary</span>
+          {:else}
+            <button
+              class="make-primary"
+              type="button"
+              aria-label={`Set ${displayName(provider)} as primary`}
+              title={`Set ${displayName(provider)} as primary`}
+              onclick={() => onPrimary(provider)}>Set primary</button
+            >
+          {/if}
+        </div>
+        {#if model.planType}
+          <span class="plan-chip">{model.planType}</span>
+        {/if}
+        {#if model.system === 'loading'}
+          <div
+            class="skeleton"
+            data-testid={`usage-skeleton-${provider}`}
+            aria-label={`Loading ${displayName(provider)} usage`}
+          >
+            Loading…
+          </div>
+        {:else if model.system === 'active'}
+          <div class="gauges">
+            <UsageGauge
+              label="5-hour"
+              window={model.session}
+              stale={model.stale}
+              {nowMs}
+            />
+            <UsageGauge
+              label="Weekly"
+              window={model.weekly}
+              stale={model.stale}
+              {nowMs}
+            />
+          </div>
+          <small class:stale={model.stale} class="freshness"
+            >● {model.stale ? 'Stale' : 'Fresh'}{#if captured}<span
+                >&nbsp;· <time datetime={captured.capturedAt}
+                  >{captured.ago}</time
+                ></span
+              >{/if}</small
+          >
+        {:else}
+          <!-- One quiet block per column: a signed-out Codex must not dim or
+               reflow the Claude column beside it (provider independence). -->
+          <p class="column-guidance" role="status">{guidance ?? ''}</p>
+        {/if}
+      </article>
+    {/each}
   </div>
-  <!-- Stays mounted so a state change is announced rather than re-declared;
-       only its content varies. Kept out of the grid so the empty case adds no
-       gap, and collapsed to zero height by having no line box. -->
-  <p class="guidance" role="status">{guidance ?? ''}</p>
   <footer>
-    <div class="footer-row">
-      <button
-        class="primary-action"
-        disabled={refreshing}
-        onclick={() => onRefresh(selected)}>Refresh now</button
-      >
-      <button
-        class="secondary-action"
-        disabled={selected === primary}
-        onclick={() => onPrimary(selected)}>Set as primary</button
-      >
-    </div>
+    <button
+      class="primary-action"
+      disabled={refreshing}
+      onclick={() => onRefresh()}
+      >{refreshing ? 'Refreshing…' : 'Refresh'}</button
+    >
     <div class="footer-row">
       <button
         class="ghost-action settings-action"
@@ -128,63 +148,133 @@
   .close-panel {
     position: absolute;
     z-index: 2;
-    top: 0.375rem;
-    right: 0.375rem;
+    top: 0.5rem;
+    right: 0.5rem;
     display: grid;
     width: 1.5rem;
     height: 1.5rem;
     min-height: 0;
     place-items: center;
     padding: 0;
-    border: 1px solid transparent;
-    border-radius: 0.375rem;
-    background: transparent;
+    border: 0;
+    border-radius: 999px;
+    background: var(--color-surface-sunken);
     color: var(--color-text-muted);
-    font-size: 1rem;
-    font-weight: 500;
+    font-size: 0.875rem;
+    font-weight: 600;
     line-height: 1;
+    transition:
+      background-color var(--duration-fast) var(--ease-out),
+      color var(--duration-fast) var(--ease-out);
   }
   .close-panel:hover,
   .close-panel:focus-visible {
-    border-color: var(--color-border);
-    background: var(--color-surface-sunken);
+    background: var(--color-border);
     color: var(--color-text);
   }
   header {
-    padding: var(--space-3) var(--space-4) 0;
+    padding: var(--space-4) var(--space-4) 0;
   }
-  .body {
+  .panel-title {
+    margin: 0;
+    font-size: 1.0625rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+  /* Two always-visible provider columns split by a hairline, in the platform
+     grouped-content idiom — no tabs, nothing to switch. */
+  .columns {
     display: grid;
-    gap: var(--space-4);
-    padding: var(--space-4);
+    grid-template-columns: 1fr 1fr;
+    padding: var(--space-3) 0 var(--space-4);
+  }
+  .provider-column {
+    display: grid;
+    min-width: 0;
+    align-content: start;
+    gap: var(--space-2);
+    padding: var(--space-1) var(--space-4) 0;
+  }
+  .provider-column + .provider-column {
+    border-left: 1px solid var(--color-border);
   }
   .provider-heading {
     display: flex;
+    min-height: 1.5rem;
     align-items: center;
     justify-content: space-between;
+    gap: var(--space-2);
+  }
+  .provider-name {
+    font-size: 0.9375rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+  /* The primary marker reads as a state, the non-primary as an action: a tinted
+     chip you cannot press versus a bordered chip you can. */
+  .primary-chip,
+  .make-primary {
+    padding: 0.1rem 0.5rem;
+    border-radius: 999px;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .primary-chip {
+    background: color-mix(in srgb, var(--color-accent) 14%, transparent);
+    color: var(--color-accent);
+  }
+  .make-primary {
+    min-height: 0;
+    border: 1px solid var(--color-border);
+    background: transparent;
+    color: var(--color-text-muted);
+    cursor: pointer;
+    transition:
+      color var(--duration-fast) var(--ease-out),
+      border-color var(--duration-fast) var(--ease-out);
+  }
+  .make-primary:hover,
+  .make-primary:focus-visible {
+    border-color: var(--color-accent);
+    color: var(--color-accent);
   }
   .plan-chip {
-    padding: 0.15rem 0.5rem;
+    justify-self: start;
+    padding: 0.1rem 0.5rem;
     border-radius: 999px;
     background: var(--color-surface-sunken);
     color: var(--color-text-muted);
     font-size: 0.6875rem;
     text-transform: capitalize;
   }
+  .gauges {
+    display: grid;
+    gap: var(--space-3);
+    margin-top: var(--space-1);
+  }
   .freshness {
     overflow: hidden;
+    margin-top: var(--space-1);
     color: var(--sev-ok);
-    font-family: var(--font-mono);
     font-size: 0.6875rem;
+    font-variant-numeric: tabular-nums;
     white-space: nowrap;
   }
   .freshness.stale {
     color: var(--color-text-faint);
   }
   .skeleton {
-    padding: 2rem;
+    padding: 1.5rem 0;
     color: var(--color-text-muted);
+    font-size: 0.8125rem;
     text-align: center;
+  }
+  .column-guidance {
+    margin: var(--space-1) 0 0;
+    color: var(--color-text-muted);
+    font-size: 0.75rem;
+    line-height: 1.45;
   }
   footer {
     display: grid;
@@ -199,7 +289,7 @@
   }
   button {
     min-height: 2.25rem;
-    border-radius: 0.5rem;
+    border-radius: 0.625rem;
     font: inherit;
     font-weight: 600;
     cursor: pointer;
@@ -208,26 +298,21 @@
     cursor: default;
     opacity: 0.45;
   }
-  /* UI-plan canonical panel: Refresh is a solid high-contrast button (near-black
-     on light, inverted on dark), Set as primary is a filled surface with a
-     border. Mapped to tokens so both themes stay consistent. */
+  /* One prominent filled action per view; everything else stays quiet. */
   .primary-action {
-    border: 1px solid var(--color-text);
-    background: var(--color-text);
-    color: var(--color-surface);
+    border: 0;
+    background: var(--color-accent);
+    color: #ffffff;
+    transition:
+      opacity var(--duration-fast) var(--ease-out),
+      transform var(--duration-fast) var(--ease-out);
   }
   .primary-action:not(:disabled):hover,
   .primary-action:focus-visible {
-    opacity: 0.88;
+    opacity: 0.9;
   }
-  .secondary-action {
-    border: 1px solid var(--color-border);
-    background: var(--color-surface);
-    color: var(--color-text);
-  }
-  .secondary-action:not(:disabled):hover,
-  .secondary-action:focus-visible {
-    background: var(--color-surface-sunken);
+  .primary-action:not(:disabled):active {
+    transform: scale(0.98);
   }
   .ghost-action {
     min-height: 1.875rem;
@@ -235,6 +320,7 @@
     background: transparent;
     color: var(--color-text-muted);
     font-weight: 500;
+    transition: color var(--duration-fast) var(--ease-out);
   }
   .settings-action {
     position: relative;
@@ -265,11 +351,15 @@
   .ghost-action.quit:focus-visible {
     color: var(--sev-exhausted);
   }
-  .guidance {
-    padding: 0 var(--space-4);
-    margin: 0;
-    color: var(--color-text-muted);
-    font-size: 0.75rem;
-    line-height: 1.45;
+  @media (prefers-reduced-motion: reduce) {
+    .close-panel,
+    .make-primary,
+    .primary-action,
+    .ghost-action {
+      transition: none;
+    }
+    .primary-action:not(:disabled):active {
+      transform: none;
+    }
   }
 </style>

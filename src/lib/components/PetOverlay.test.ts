@@ -21,6 +21,7 @@ describe('PetOverlay', () => {
           stale: false,
           session: { usedPercent: 74, severity: 'warn' },
           weekly: { usedPercent: 93, severity: 'critical' },
+          secondary: null,
           animation,
           petName: 'Geometric pet',
           size: 160,
@@ -48,6 +49,62 @@ describe('PetOverlay', () => {
     expect(screen.queryByRole('status')).toBeNull();
   });
 
+  it('draws the secondary provider as a thinner inner ring when it has usage', () => {
+    const { container } = render(PetOverlay, {
+      props: {
+        model: {
+          system: 'active',
+          stale: false,
+          session: { usedPercent: 74, severity: 'warn' },
+          weekly: { usedPercent: 93, severity: 'critical' },
+          secondary: {
+            session: { usedPercent: 22, severity: 'ok' },
+            weekly: { usedPercent: 48, severity: 'ok' },
+            stale: false,
+          },
+          animation,
+          petName: 'Geometric pet',
+          size: 160,
+        },
+      },
+    });
+
+    const secondary = container.querySelector(
+      '[data-testid="usage-ring-secondary"]',
+    );
+    expect(secondary).toBeTruthy();
+    // Both providers are announced through one composed label.
+    expect(
+      screen.getByRole('img', {
+        name: 'Provider usage: 5-hour 74%, Weekly 93%. Secondary provider: 5-hour 22%, Weekly 48%',
+      }),
+    ).toBeTruthy();
+    // The inner ring never outweighs the primary: it is decorative to a screen
+    // reader and visually subordinate.
+    expect(secondary?.getAttribute('aria-hidden')).toBe('true');
+  });
+
+  it('omits the inner ring entirely without secondary usage', () => {
+    const { container } = render(PetOverlay, {
+      props: {
+        model: {
+          system: 'active',
+          stale: false,
+          session: { usedPercent: 74, severity: 'warn' },
+          weekly: { usedPercent: 93, severity: 'critical' },
+          secondary: null,
+          animation,
+          petName: 'Geometric pet',
+          size: 160,
+        },
+      },
+    });
+
+    expect(
+      container.querySelector('[data-testid="usage-ring-secondary"]'),
+    ).toBeNull();
+  });
+
   it('requests the native menu on right-click instead of the browser menu', async () => {
     const onShowMenu = vi.fn();
     render(PetOverlay, {
@@ -57,6 +114,7 @@ describe('PetOverlay', () => {
           stale: false,
           session: { usedPercent: 74, severity: 'warn' },
           weekly: { usedPercent: 93, severity: 'critical' },
+          secondary: null,
           animation,
           petName: 'Geometric pet',
           size: 160,
@@ -86,6 +144,7 @@ describe('PetOverlay', () => {
           stale: false,
           session: { usedPercent: 74, severity: 'warn' },
           weekly: { usedPercent: 93, severity: 'critical' },
+          secondary: null,
           animation,
           petName: 'Geometric pet',
           size: 160,
@@ -110,6 +169,7 @@ describe('PetOverlay', () => {
           stale: false,
           session: { usedPercent: null, severity: 'unknown' },
           weekly: { usedPercent: 15, severity: 'ok' },
+          secondary: null,
           animation,
           petName: 'Geometric pet',
           size: 160,
@@ -135,6 +195,7 @@ describe('PetOverlay', () => {
           stale: false,
           session: { usedPercent: 10, severity: 'ok' },
           weekly: { usedPercent: 10, severity: 'ok' },
+          secondary: null,
           animation,
           petName: 'Geometric pet',
           size: 192,
@@ -155,6 +216,7 @@ describe('PetOverlay', () => {
           stale: true,
           session: { usedPercent: 42, severity: 'ok' },
           weekly: { usedPercent: 55, severity: 'ok' },
+          secondary: null,
           animation,
           petName: 'Geometric pet',
           size: 160,
@@ -188,6 +250,7 @@ describe('PetOverlay', () => {
           stale: false,
           session: { usedPercent: null, severity: 'unknown' },
           weekly: { usedPercent: null, severity: 'unknown' },
+          secondary: null,
           animation,
           petName: 'Geometric pet',
           size: 160,

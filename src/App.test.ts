@@ -1,4 +1,4 @@
-﻿import {
+import {
   cleanup,
   fireEvent,
   render,
@@ -406,7 +406,7 @@ describe('application composition root', () => {
 
     render(App, { props: { gateway, notificationAdapter: notifications } });
 
-    expect(await screen.findByText('Pro')).toBeTruthy();
+    expect((await screen.findAllByText('Pro')).length).toBeGreaterThan(0);
     expect(screen.getAllByText('Unknown').length).toBeGreaterThanOrEqual(2);
   });
 
@@ -532,7 +532,7 @@ describe('application composition root', () => {
     window.history.replaceState({}, '', '/?window=panel');
     const { gateway } = fixture();
     render(App, { props: { gateway, notificationAdapter: notifications } });
-    expect(await screen.findByText('Pro')).toBeTruthy();
+    expect((await screen.findAllByText('Pro')).length).toBeGreaterThan(0);
     await fireEvent.click(screen.getByRole('button', { name: 'Settings' }));
     await fireEvent.click(screen.getByLabelText('Native notifications'));
     await waitFor(() => expect(gateway.updateSettings).toHaveBeenCalled());
@@ -543,11 +543,11 @@ describe('application composition root', () => {
     window.history.replaceState({}, '', '/?window=panel');
     const { gateway } = fixture();
     render(App, { props: { gateway, notificationAdapter: notifications } });
-    await screen.findByText('Pro');
+    await screen.findAllByText('Pro');
     await fireEvent.click(screen.getByRole('button', { name: 'Settings' }));
     expect(screen.getByLabelText('Native notifications')).toBeTruthy();
     await fireEvent.click(screen.getByRole('button', { name: '← Back' }));
-    expect(await screen.findByText('Pro')).toBeTruthy();
+    expect((await screen.findAllByText('Pro')).length).toBeGreaterThan(0);
     expect(screen.queryByLabelText('Native notifications')).toBeNull();
   });
 
@@ -612,17 +612,10 @@ describe('application composition root', () => {
     const { gateway } = fixture();
     render(App, { props: { gateway, notificationAdapter: notifications } });
 
-    await fireEvent.click(await screen.findByRole('tab', { name: 'Codex' }));
+    const setPrimary = (await screen.findByRole('button', {
+      name: 'Set Codex as primary',
+    })) as HTMLButtonElement;
     expect(gateway.updateSettings).not.toHaveBeenCalled();
-    expect(screen.getByRole('tab', { name: 'Claude (primary)' })).toBeTruthy();
-    expect(
-      screen.getByRole('tab', { name: 'Codex' }).getAttribute('aria-selected'),
-    ).toBe('true');
-
-    const setPrimary = screen.getByRole('button', {
-      name: 'Set as primary',
-    }) as HTMLButtonElement;
-    expect(setPrimary.disabled).toBe(false);
     await fireEvent.click(setPrimary);
     await waitFor(() =>
       expect(gateway.updateSettings).toHaveBeenCalledWith(
@@ -634,8 +627,13 @@ describe('application composition root', () => {
         }),
       ),
     );
-    expect(screen.getByRole('tab', { name: 'Codex (primary)' })).toBeTruthy();
-    expect(setPrimary.disabled).toBe(true);
+    // The chip moved columns: Codex is primary, Claude now offers the control.
+    expect(
+      await screen.findByRole('button', { name: 'Set Claude as primary' }),
+    ).toBeTruthy();
+    expect(
+      screen.queryByRole('button', { name: 'Set Codex as primary' }),
+    ).toBeNull();
   });
 
   it('changes the pet from settings without touching the primary provider', async () => {
@@ -690,18 +688,19 @@ describe('application composition root', () => {
     );
     render(App, { props: { gateway, notificationAdapter: notifications } });
 
-    await fireEvent.click(await screen.findByRole('tab', { name: 'Codex' }));
-    const setPrimary = screen.getByRole('button', {
-      name: 'Set as primary',
-    }) as HTMLButtonElement;
-    await fireEvent.click(setPrimary);
+    await fireEvent.click(
+      await screen.findByRole('button', { name: 'Set Codex as primary' }),
+    );
 
     await screen.findByText('Settings could not be saved');
-    expect(screen.getByRole('tab', { name: 'Claude (primary)' })).toBeTruthy();
+    // The failed save rolled back: Claude keeps the chip, Codex keeps the
+    // control.
     expect(
-      screen.getByRole('tab', { name: 'Codex' }).getAttribute('aria-selected'),
-    ).toBe('true');
-    expect(setPrimary.disabled).toBe(false);
+      screen.getByRole('button', { name: 'Set Codex as primary' }),
+    ).toBeTruthy();
+    expect(
+      screen.queryByRole('button', { name: 'Set Claude as primary' }),
+    ).toBeNull();
   });
 
   it('reports a claimed hide/show shortcut without touching saved settings', async () => {
@@ -738,7 +737,7 @@ describe('application composition root', () => {
       notificationsEnabled: true,
     });
     render(App, { props: { gateway, notificationAdapter: notifications } });
-    await screen.findByText('Pro');
+    await screen.findAllByText('Pro');
     await fireEvent.click(screen.getByRole('button', { name: 'Settings' }));
     expect(
       (
@@ -769,7 +768,7 @@ describe('application composition root', () => {
       }),
     };
     render(App, { props: { gateway, notificationAdapter: serialized } });
-    await screen.findByText('Pro');
+    await screen.findAllByText('Pro');
     await waitFor(() =>
       expect(gateway.listenProviderStates).toHaveBeenCalledOnce(),
     );
@@ -788,7 +787,7 @@ describe('application composition root', () => {
       permission: vi.fn(async () => 'denied' as const),
     };
     render(App, { props: { gateway, notificationAdapter: denied } });
-    await screen.findByText('Pro');
+    await screen.findAllByText('Pro');
     await fireEvent.click(screen.getByRole('button', { name: 'Settings' }));
     await fireEvent.click(screen.getByLabelText('Native notifications'));
     expect(
@@ -806,7 +805,7 @@ describe('application composition root', () => {
     window.history.replaceState({}, '', '/?window=panel');
     const { gateway } = fixture();
     render(App, { props: { gateway, notificationAdapter: notifications } });
-    await screen.findByText('Pro');
+    await screen.findAllByText('Pro');
     await fireEvent.click(screen.getByRole('button', { name: 'Settings' }));
     await fireEvent.change(await screen.findByLabelText('Appearance'), {
       target: { value: 'dark' },
@@ -839,7 +838,7 @@ describe('application composition root', () => {
         return settings;
       });
     render(App, { props: { gateway, notificationAdapter: notifications } });
-    await screen.findByText('Pro');
+    await screen.findAllByText('Pro');
     await fireEvent.click(screen.getByRole('button', { name: 'Settings' }));
     const bubbles = (await screen.findByLabelText(
       'Speech bubbles',
@@ -875,7 +874,7 @@ describe('application composition root', () => {
       .mockRejectedValueOnce(new Error('/private/settings.json secret payload'))
       .mockImplementationOnce(async (settings) => settings);
     render(App, { props: { gateway, notificationAdapter: notifications } });
-    await screen.findByText('Pro');
+    await screen.findAllByText('Pro');
     await fireEvent.click(screen.getByRole('button', { name: 'Settings' }));
     const nativeNotifications = (await screen.findByLabelText(
       'Native notifications',
@@ -992,12 +991,14 @@ describe('application composition root', () => {
     try {
       const { gateway } = fixture();
       render(App, { props: { gateway, notificationAdapter: notifications } });
-      expect(await screen.findByText(/Fresh/)).toBeTruthy();
+      expect((await screen.findAllByText(/Fresh/)).length).toBeGreaterThan(0);
 
       // 21 minutes clears FRESH_MAX_AGE_MS with no snapshot in between: the
       // transition can only come from the clock ticker.
       await vi.advanceTimersByTimeAsync(21 * 60_000);
-      await waitFor(() => expect(screen.getByText(/Stale/)).toBeTruthy());
+      await waitFor(() =>
+        expect(screen.getAllByText(/Stale/).length).toBeGreaterThan(0),
+      );
     } finally {
       vi.useRealTimers();
     }
@@ -1007,7 +1008,7 @@ describe('application composition root', () => {
     window.history.replaceState({}, '', '/?window=panel');
     const { gateway, emit } = fixture();
     render(App, { props: { gateway, notificationAdapter: notifications } });
-    await screen.findByText('Pro');
+    await screen.findAllByText('Pro');
 
     emit({ ...active('claude', 3), snapshot: null, expired: true });
 
@@ -1023,7 +1024,7 @@ describe('application composition root', () => {
     window.history.replaceState({}, '', '/?window=panel');
     const { gateway, emit } = fixture();
     render(App, { props: { gateway, notificationAdapter: notifications } });
-    await screen.findByText('Pro');
+    await screen.findAllByText('Pro');
 
     emit({
       ...active('claude', 3),
@@ -1096,7 +1097,7 @@ describe('application composition root', () => {
     render(App, {
       props: { gateway: harness.gateway, notificationAdapter: notifications },
     });
-    await screen.findByRole('button', { name: 'Refresh now' });
+    await screen.findByRole('button', { name: 'Refresh' });
     await waitFor(() =>
       expect(harness.gateway.listenUpdateState).toHaveBeenCalled(),
     );

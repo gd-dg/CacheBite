@@ -523,6 +523,30 @@
     toProviderPresentation(primaryState, nowMs),
   );
   const primaryUi = $derived(derivePetUiState(primaryState, nowMs));
+  const secondaryProvider = $derived(
+    appSettings.primaryProvider === 'claude' ? 'codex' : 'claude',
+  );
+  const secondaryPresentation = $derived(
+    toProviderPresentation($providersStore[secondaryProvider], nowMs),
+  );
+  // The inner ring exists only while the other provider has live usage: a
+  // signed-out or unavailable secondary leaves the primary ring exactly as it
+  // was, with nothing to configure.
+  const secondaryRing = $derived(
+    secondaryPresentation.system === 'active'
+      ? {
+          session: {
+            usedPercent: secondaryPresentation.session.usedPercent,
+            severity: secondaryPresentation.session.severity,
+          },
+          weekly: {
+            usedPercent: secondaryPresentation.weekly.usedPercent,
+            severity: secondaryPresentation.weekly.severity,
+          },
+          stale: secondaryPresentation.stale,
+        }
+      : null,
+  );
   const resolvedAnimation = $derived(
     petPackage
       ? resolvePetAnimation(
@@ -560,6 +584,7 @@
             usedPercent: primaryPresentation.weekly.usedPercent,
             severity: primaryPresentation.weekly.severity,
           },
+          secondary: secondaryRing,
           animation: resolvedAnimation,
           petName:
             petPackage?.manifest.displayName ?? appSettings.selectedPetId,
@@ -708,17 +733,17 @@
       <UsagePanel
         updateAvailable={availableUpdateVersion !== null}
         providers={panelProviders}
-        selected={$providersStore.selected}
         primary={$settingsStore.primaryProvider}
-        refreshing={$providersStore.refreshing[$providersStore.selected]}
+        refreshing={$providersStore.refreshing.claude ||
+          $providersStore.refreshing.codex}
         {nowMs}
         onClose={() => void gateway.hidePanel()}
         onQuit={() => void gateway.quit()}
         onSettings={() => (showSettings = true)}
-        onSelect={(provider) => {
-          providersStore.selectTab(provider);
+        onRefresh={() => {
+          providersStore.requestRefresh('claude');
+          providersStore.requestRefresh('codex');
         }}
-        onRefresh={(provider) => providersStore.requestRefresh(provider)}
         onPrimary={(provider) =>
           void changeSettings({ ...$settingsStore, primaryProvider: provider })}
       />

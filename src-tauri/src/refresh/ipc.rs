@@ -27,7 +27,9 @@ pub const PROVIDER_STATE_EVENT: &str = "provider-state";
 /// pixels throughout.
 const PANEL_ANCHOR_GAP_LOGICAL: f64 = 12.0;
 /// Fixed panel width in logical pixels. Only the height tracks content.
-const PANEL_WIDTH_LOGICAL: f64 = 312.0;
+/// Must track `main.panel` in `global.css` and the panel window width in
+/// `tauri.conf.json` — 384 fits the two side-by-side provider columns.
+const PANEL_WIDTH_LOGICAL: f64 = 384.0;
 /// How long `toggle_panel` waits for the renderer to report its measured height
 /// before revealing the panel anyway. A single misplaced frame beats a panel
 /// that never appears because the renderer failed to measure.
